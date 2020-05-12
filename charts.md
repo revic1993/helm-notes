@@ -9,6 +9,11 @@
     - [Lookup function](#lookup-function)
   - [Flow control](#flow-control)
   - [Variables](#variables)
+  - [Named Templates](#named-templates)
+    - [Partials and _ files](#partials-and--files)
+    - [define](#define)
+    - [Templates](#templates-1)
+      - [The `include` function](#the-include-function)
 
 
 ## Basics
@@ -132,4 +137,100 @@ data:
     {{- end }}
 ```
 
-- there is one variable that is always global - $ - this variable will always point to the root context
+- there is one variable that is always global - `$` - this variable will always point to the root context
+
+## Named Templates
+- Template names are global
+  -  If you declare two templates with the same name, whichever one is loaded last will be the one used
+- Define template with the name of the chart: `{{ define "mychart.labels" }}
+
+### Partials and _ files
+- Files beginning with `_` are not rendered to kubernetes object definition, and are available to other charts for use.
+  - These files are used for partials and helpers
+
+### define
+- The define action allows us to create a named template inside of a template file
+```yaml
+{{ define "mychart.labels"}}
+  labels:
+    generator: helm
+    date: {{ now | htmlDate }}
+{{end}}
+```
+
+### Templates
+- [Checkout template in depth](https://helm.sh/docs/chart_template_guide/named_templates/)
+- **template** is an action, and not a function, there is no way to pass the output of a template call to other functions; the data is simply inserted inline.
+  - To work around this case, Helm provides an alternative to template that will import the contents of a template into the present pipeline where it can be passed along to other functions in the pipeline
+#### The `include` function
+
+```yaml
+{{- define "mychart.app" -}}
+app_name: {{ .Chart.Name }}
+app_version: "{{ .Chart.Version }}"
+{{- end -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+  labels:
+    {{ template "mychart.app" . }}
+data:
+  myvalue: "Hello World"
+  {{- range $key, $val := .Values.favorite }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+{{ template "mychart.app" . }}
+```
+- Output of above will be
+```yaml
+# Source: mychart/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: measly-whippet-configmap
+  labels:
+    app_name: mychart
+app_version: "0.1.0+1478129847"
+data:
+  myvalue: "Hello World"
+  drink: "coffee"
+  food: "pizza"
+  app_name: mychart
+app_version: "0.1.0+1478129847" # this is not what is expected, indentation is lost when using template as it just injects the data inline
+```
+- Using `include`
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+  labels:
+{{ include "mychart.app" . | indent 4 }}
+data:
+  myvalue: "Hello World"
+  {{- range $key, $val := .Values.favorite }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+{{ include "mychart.app" . | indent 2 }} # this will pipe the output to indent function which will then add two spaces
+```
+
+- Output of above will be
+```yaml
+# Source: mychart/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edgy-mole-configmap
+  labels:
+    app_name: mychart
+    app_version: "0.1.0+1478129987"
+data:
+  myvalue: "Hello World"
+  drink: "coffee"
+  food: "pizza"
+  app_name: mychart
+  app_version: "0.1.0+1478129987"
+```
+
