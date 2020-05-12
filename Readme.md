@@ -1,3 +1,4 @@
 # Notes on helm
 - [Basic concepts](./concepts.md)
-- [Charts in Depth](./charts.md)
+- [Charts Templating](./charts-templating.md)
+- [Schelm for debugging](https://github.com/databus23/schelm)

@@ -1,5 +1,5 @@
-# Charts
-- [Charts](#charts)
+# Charts Templating
+- [Charts Templating](#charts-templating)
   - [Basics](#basics)
   - [Built-in Objects](#built-in-objects)
   - [Value files](#value-files)
@@ -14,6 +14,7 @@
     - [define](#define)
     - [Templates](#templates-1)
       - [The `include` function](#the-include-function)
+  - [Files](#files)
 
 
 ## Basics
@@ -234,3 +235,12 @@ data:
   app_version: "0.1.0+1478129987"
 ```
 
+## Files
+- Provides access through `.Files` Object.
+- The extra files added will be bundled. 
+  - ***Note*** : Charts must be smaller than **1M** because of the storage limitations of Kubernetes objects
+- Inaccessible files through `.Files` object:
+  - `template/*`
+  - files listed in `.helmignore`
+- Do not preserve unix mode information, so file-level permission will have no impact on availibility of file.
+- There is no way to pass files external to chart during installation
